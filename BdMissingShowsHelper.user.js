@@ -3,7 +3,6 @@
 // @namespace  http://www.bierdopje.com
 // @version    0.01
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
-// @grant      GM_xmlhttpRequest
 // @grant      GM_setClipboard
 // @grant      unsafeWindow
 // @match      http://www.bierdopje.com/forum/geachte-redactie/topic/1883-missende-series-in-bd-wel-in-tvdb/*
