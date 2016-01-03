@@ -45,7 +45,9 @@ $(function() {
   link.type = 'text/css';
   link.href = CSS_URL;
   pageHead.insertBefore(link,pageHead.lastChild);
-  
+
+  moment.locale('nl');
+
   $(document).on('click', 'button[data-tvdbid]', function(e) {
     var button = $(this);
     var tvDbId = button.attr('data-tvdbid');
