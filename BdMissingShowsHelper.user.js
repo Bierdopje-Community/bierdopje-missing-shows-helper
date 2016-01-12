@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       Bierdopje missende series helper
 // @namespace  http://www.bierdopje.com
-// @version    0.01
+// @version    0.02
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
 // @grant      GM_setClipboard
 // @grant      unsafeWindow
@@ -9,6 +9,7 @@
 // @require    http://code.jquery.com/jquery-2.1.4.min.js
 // @require    http://momentjs.com/downloads/moment-with-locales.min.js
 // @copyright  2016+, Robin Houtevelts
+// @run-at     document-start
 // ==/UserScript==
 
 if (window.top != window.self)
