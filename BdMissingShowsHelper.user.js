@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name       Bierdopje missende series helper
 // @namespace  http://www.bierdopje.com
-// @version    0.02
+// @version    0.03
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
 // @grant      GM_setClipboard
+// @grant      GM_addStyle
 // @grant      unsafeWindow
 // @match      http://www.bierdopje.com/forum/geachte-redactie/topic/1883-missende-series-in-bd-wel-in-tvdb/*
 // @require    http://code.jquery.com/jquery-2.1.4.min.js
@@ -14,6 +15,8 @@
 
 if (window.top != window.self)
   return;
+
+GM_addStyle('.twbs.red { background-color: #F3D4D4 } .twbs.green { background-color: #DFF5E2}');
 
 var BD_API_URL   = 'https://bierdopje-api.houtevelts.com';
 var TVDB_API_URL = 'https://tvdb-api.houtevelts.com';
@@ -196,12 +199,17 @@ $(function() {
           
           // set background color on comments, displaying the status.
           // green means it's on BD, red means it's not.
-          var color = show.isAvailable ? '#DFF5E2' : '#F3D4D4';
+          var color = show.isAvailable ? 'green' : 'red';
           comments.map(function(comment) {
-            var element = comment.bodyel;
-            $('td.posttext', element).css('background-color', color);
-          });
+            var element = $('td.posttext', comment.bodyel);
+            // In case of multiple tvdbId's in a comment
+            // when a comment is set to red, don't make it green
+            if (element.hasClass('red'))
+              return true;
 
+            element.addClass('twbs '+color);
+          });
+          
           if (todo == 0)
             $(document).trigger('bierdopje.missingShowsFinder.finished', [shows]);
         });
@@ -314,26 +322,31 @@ $(function() {
         return true; //continue
       
       var TVDBId = -1;
-      
       var body = comment.body;
-      var match = /thetvdb.com\/.*?id=(\d+)/i.exec(body);
-      if (match != null) {
-        TVDBId = parseInt(match[1]);
-      }else{
-        match = /tvdb.*?(\d+)/i.exec(body);
-        if(match != null)
-          TVDBId = parseInt(match[1]);
+      
+      var regexOptions = {
+        fromUrl : /thetvdb.com\/.*?id=(\d+)/gi,
+        raw     : /tvdb.*?(\d+)/gi
       }
       
-      if (!(TVDBId > 0))
-        return true; // continue
+      // Look for an url to thetvdb by default
+      var regex = regexOptions['fromUrl'];
+      if (!regex.test(body)) { // If no url is found, try a less subtle search
+        regex = regexOptions['raw'];
+      }
+      regex.lastIndex = 0; // reset internal pointer
       
-      log('Found tvDbId: "'+TVDBId+'"');
+      var match;
+      while ((match = regex.exec(body)) !== null) {
+        TVDBId = parseInt(match[1]);
         
-      if(!tvDbIds.hasOwnProperty(TVDBId))
-        tvDbIds[TVDBId] = [];
-      
-      tvDbIds[TVDBId].push(comment);
+        log('Found tvDbId: "'+TVDBId+'"');
+
+        if(!tvDbIds.hasOwnProperty(TVDBId))
+          tvDbIds[TVDBId] = [];
+
+        tvDbIds[TVDBId].push(comment);
+      }
     });
     
     log('Found '+Object.keys(tvDbIds).length+' tvDbId\'s');
