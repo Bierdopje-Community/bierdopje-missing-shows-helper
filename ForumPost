@@ -1,0 +1,39 @@
+[b]Bierdopje missing shows helper[/b] userscript
+
+Ik heb voor [user]Xandecs[/user] een klein userscript geschreven dat het toevoegen van nieuwe series op Bierdopje voor hem draagbaarder moet maken.
+
+Het script activeerd zich enkel in de threads van [url=http://www.bierdopje.com/forum/geachte-redactie/topic/1883-missende-series-in-bd-wel-in-tvdb]missende series in bd/wel in tvdb[/url].
+Daar zal het:
+[list=1]
+[*] Zoeken naar comments met een TvDbId
+[*] Kijken, via de API van Bierdopje, of de serie beschikbaar is op Bierdopje
+[*] Met een mooie interface zijn bevindingen terug geven.
+[/list]
+
+Een voorbeeld:
+[img]http://eih.bz/s1/gifvlvf.gif[/img]
+
+Om te [b]installeren[/b] heb je een extensie nodig in je browser:
+[list]
+[*] Chrome => [url=https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en]Tampermonkey[/url]
+[*] Firefox => [url=https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/]GreaseMonkey[/url]
+[/list]
+
+Vervolgens kan je het script hier [b]installeren[/b]:
+[url=https://github.com/Bierdopje-Community/bierdopje-missing-shows-helper/raw/master/BdMissingShowsHelper.user.js]https://github.com/Bierdopje-Community/bierdopje-missing-shows-helper/raw/master/BdMissingShowsHelper.user.js[/url]
+
+De code is vrij beschikbaar op Github.
+[list]
+[*] [url=https://github.com/Bierdopje-Community/bierdopje-missing-shows-helper]Bierdopje-Community/bierdopje-missing-shows-helper[/url] (het script)
+[*] [url=https://github.com/mattiasdelang/bierdopje-php]mattiasdelang/bierdopje-php[/url]
+[*] [url=https://github.com/Moinax/TvDb]Moinax/TvDb[/url]
+[/list]
+
+Er zijn enkele limitaties waarmee rekening gehouden moet worden:
+[list]
+[*] [s]Het script houd [i]nog[/i] geen rekening met meerdere TvDbId's in 1 comment.[/s]
+[*] Er is een cache van [b]6h[/b] voor alle requests naar de API van Bierdopje. Hierdoor zal het 6h duren voordat een toegevoegde show als beschikbaar wordt herkend door het script.
+[*] Pas nadat alle TvDbId's op de pagina zijn nagekeken zal de interface getoont worden. Indien er veel TvDbId's op een pagina zijn kan dit even duren.
+[/list]
+
+De javascript code is ruw en ongedocumenteerd. Dit hoop ik in de toekomst verder aan te vullen.
