@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       Bierdopje missende series helper
 // @namespace  http://www.bierdopje.com
-// @version    0.03
+// @version    0.04
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
 // @grant      GM_setClipboard
 // @grant      GM_addStyle
@@ -207,6 +207,9 @@ $(function() {
             if (element.hasClass('red'))
               return true;
 
+            if (color == 'red')
+              element.removeClass('green');
+            
             element.addClass('twbs '+color);
           });
           
