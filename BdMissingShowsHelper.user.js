@@ -72,7 +72,10 @@ $(function() {
       if(show.isAvailable){
         var comments = tvDbId_comments[show.tvdbId];
         comments.map(function(comment) {
-          comments_shows[comment.date.format('x')] = show;
+		  var date = comment.date.format('x');
+		  if (!comments_shows.hasOwnProperty(date))
+		    comments_shows[date] = [];
+          comments_shows[date].push(show);
         });
       } else {
         missingShows.push(show);
@@ -95,7 +98,7 @@ $(function() {
         
     // order available shows by commentdate
     Object.keys(comments_shows).sort().map(function(key) {
-      availableShows.push(comments_shows[key]);
+      availableShows = availableShows.concat(comments_shows[key]);
     });
     availableShows = $.unique(availableShows);
     comments_shows = null;
