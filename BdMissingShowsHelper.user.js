@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       Bierdopje missende series helper
 // @namespace  http://www.bierdopje.com
-// @version    0.04
+// @version    0.05
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
 // @grant      GM_setClipboard
 // @grant      GM_addStyle
