@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       Bierdopje missende series helper
 // @namespace  http://www.bierdopje.com
-// @version    0.05
+// @version    0.06
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
 // @grant      GM_setClipboard
 // @grant      GM_addStyle
@@ -323,40 +323,77 @@ function getTvDbIdsFromComments(comments, callback) {
     var ignoredUsers = ['xandecs']; // lowercase
 
     log('Extracting TvDbId\'s from comments');
+
+    function executeRegex(regex, body, comment, processCb) {
+        var match;
+        while ((match = regex.exec(body)) !== null) {
+            processCb(match[1], function (TVDBId) {
+                if (!TVDBId) {
+                    return;
+                }
+                log('Found tvDbId: "' + TVDBId + '"');
+
+                if (!tvDbIds.hasOwnProperty(TVDBId))
+                    tvDbIds[TVDBId] = [];
+
+                tvDbIds[TVDBId].push(comment);
+            });
+        }
+    }
+
+    var promises = [];
+
     comments.map(function (comment) {
         if (ignoredUsers.indexOf(comment.user.name.toLowerCase()) >= 0)
             return true; //continue
 
-        var TVDBId = -1;
         var body = comment.body;
 
         var regexOptions = {
             fromUrl: /thetvdb.com\/.*?id=(\d+)/gi,
+            fromSlug: /thetvdb.com\/series\/([\w-_]+)/gi,
             raw: /tvdb.*?(\d+)/gi
+        };
+
+        // First try to find id's based on slugs
+        var regex = regexOptions['fromSlug'];
+        if (regex.test(body)) {
+            regex.lastIndex = 0;
+            promises.push(new Promise(function (resolve, reject) {
+                executeRegex(regex, body, comment, function (slug, cb) {
+                    console.log('Getting tvdbId from slug: "' + slug + '"');
+                    getSerieInfoFromTvDbSlug(slug, function (show) {
+                        if (Object.keys(show).length <= 0) {
+                            console.log('Slug "' + slug + '" does not exist.');
+                            cb(false);
+                        }
+                        console.log('Slug "' + slug + '" is tvdb "' + show.id + '"');
+                        cb(parseInt(show.id));
+                        resolve();
+                    });
+                });
+            }));
         }
 
         // Look for an url to thetvdb by default
-        var regex = regexOptions['fromUrl'];
+        regex = regexOptions['fromUrl'];
         if (!regex.test(body)) { // If no url is found, try a less subtle search
             regex = regexOptions['raw'];
         }
         regex.lastIndex = 0; // reset internal pointer
 
-        var match;
-        while ((match = regex.exec(body)) !== null) {
-            TVDBId = parseInt(match[1]);
-
-            log('Found tvDbId: "' + TVDBId + '"');
-
-            if (!tvDbIds.hasOwnProperty(TVDBId))
-                tvDbIds[TVDBId] = [];
-
-            tvDbIds[TVDBId].push(comment);
-        }
+        executeRegex(regex, body, comment, function (id, cb) {
+            promises.push(new Promise(function (resolve, reject) {
+                cb(parseInt(id));
+                resolve();
+            }));
+        });
     });
 
-    log('Found ' + Object.keys(tvDbIds).length + ' tvDbId\'s');
-    callback(tvDbIds);
+    Promise.all(promises).then(function () {
+        log('Found ' + Object.keys(tvDbIds).length + ' tvDbId\'s');
+        callback(tvDbIds);
+    });
 }
 
 function checkIfExists(tvDbId, callback) {
@@ -396,6 +433,14 @@ function checkIfAvailableOnBierdopje(TVDBId, callback) {
 
 function getSerieInfoFromTvDb(TVDBId, callback) {
     $.getJSON(TVDB_API_URL + '/show/' + TVDBId, function (show) {
+        callback(show);
+    }).fail(function () {
+        callback({});
+    });
+}
+
+function getSerieInfoFromTvDbSlug(slug, callback) {
+    $.getJSON(TVDB_API_URL + '/show/search/' + slug, function (show) {
         callback(show);
     }).fail(function () {
         callback({});
