@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       Bierdopje missende series helper
 // @namespace  http://www.bierdopje.com
-// @version    0.05
+// @version    0.06
 // @description  Toont welke series nog niet zijn toegevoegd op bierdopje
 // @grant      GM_setClipboard
 // @grant      GM_addStyle
@@ -14,13 +14,13 @@
 // ==/UserScript==
 
 if (window.top != window.self)
-  return;
+    return;
 
 GM_addStyle('.twbs.red { background-color: #F3D4D4 } .twbs.green { background-color: #DFF5E2}');
 
-var BD_API_URL   = 'https://bierdopje-api.houtevelts.com';
+var BD_API_URL = 'https://bierdopje-api.houtevelts.com';
 var TVDB_API_URL = 'https://tvdb-api.houtevelts.com';
-var CSS_URL      = 'https://bierdopje-api.houtevelts.com/scoped-twbs.css';
+var CSS_URL = 'https://bierdopje-api.houtevelts.com/scoped-twbs.css';
 
 var DEBUG = true;
 
@@ -39,370 +39,415 @@ var USER_REQUEST_TXT = '{{username}}<sup><a href="{{permalink}}" title="{{time}}
 var windowLocation = window.location.href.split("#")[0];
 var tvDbId_comments = {};
 
-$(function() {
-  /* Inject bootstrap */
-  //https://raw.githubusercontent.com/homeyer/scoped-twbs/
-  var pageHead = document.getElementsByTagName("HEAD")[0];
-  var link = window.document.createElement('link');
-  link.rel = 'stylesheet';
-  link.type = 'text/css';
-  link.href = CSS_URL;
-  pageHead.insertBefore(link,pageHead.lastChild);
+$(function () {
+    /* Inject bootstrap */
+    //https://raw.githubusercontent.com/homeyer/scoped-twbs/
+    var pageHead = document.getElementsByTagName("HEAD")[0];
+    var link = window.document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = CSS_URL;
+    pageHead.insertBefore(link, pageHead.lastChild);
 
-  moment.locale('nl');
+    moment.locale('nl');
 
-  $(document).on('click', 'button[data-tvdbid]', function(e) {
-    var button = $(this);
-    var tvDbId = button.attr('data-tvdbid');
-    GM_setClipboard(tvDbId);
-  });
-  
-  $(document).on('click', 'button[data-url]', function(e) {
-    var button = $(this);
-    var url = button.attr('data-url');
-    GM_setClipboard(url);
-  });
-  
-  $(document).on('bierdopje.missingShowsFinder.finished', function(e, shows) {
-    var missingShows = [];
-    var availableShows = [];
-    var comments_shows = {}; // so we can sort by request-date
-    
-    shows.map(function(show) {
-      if(show.isAvailable){
-        var comments = tvDbId_comments[show.tvdbId];
-        comments.map(function(comment) {
-		  var date = comment.date.format('x');
-		  if (!comments_shows.hasOwnProperty(date))
-		    comments_shows[date] = [];
-          comments_shows[date].push(show);
+    $(document).on('click', 'button[data-tvdbid]', function (e) {
+        var button = $(this);
+        var tvDbId = button.attr('data-tvdbid');
+        GM_setClipboard(tvDbId);
+    });
+
+    $(document).on('click', 'button[data-url]', function (e) {
+        var button = $(this);
+        var url = button.attr('data-url');
+        GM_setClipboard(url);
+    });
+
+    $(document).on('bierdopje.missingShowsFinder.finished', function (e, shows) {
+        var missingShows = [];
+        var availableShows = [];
+        var comments_shows = {}; // so we can sort by request-date
+
+        shows.map(function (show) {
+            if (show.isAvailable) {
+                var comments = tvDbId_comments[show.tvdbId];
+                comments.map(function (comment) {
+                    var date = comment.date.format('x');
+                    if (!comments_shows.hasOwnProperty(date))
+                        comments_shows[date] = [];
+                    comments_shows[date].push(show);
+                });
+            } else {
+                missingShows.push(show);
+            }
         });
-      } else {
-        missingShows.push(show);
-      }
-    });
-    shows = null;
-    delete shows;
-    
-    // order missing shows by name
-    missingShows.sort(function(a, b) {
-      var nameA = a.name.toLowerCase();
-      var nameB = b.name.toLowerCase();
-      
-      if (nameA > nameB)
-        return 1;
-      else if (nameA < nameB)
-        return -1;
-      return 0;
-    });
-        
-    // order available shows by commentdate
-    Object.keys(comments_shows).sort().map(function(key) {
-      availableShows = availableShows.concat(comments_shows[key]);
-    });
-    availableShows = $.unique(availableShows);
-    comments_shows = null;
-    delete comments_shows;
-    
-    var getRequests = function(show, cb) {
-      var comments = tvDbId_comments[parseInt(show.tvDbId)];
-      comments.sort(function(a, b) {
-        var dateA = a.date.format('x');
-        var dateB = b.date.format('x');
-        
-        if (dateA > dateB)
-          return 1;
-        else if (dateA < dateB)
-          return -1;
-        return 0;
-      });
-      comments.map(function(comment) {
-        var request = USER_REQUEST_TXT.replace(/{{username}}/g, comment.user.name);
-            request = request.replace(/{{permalink}}/g, comment.permaLink);
-            request = request.replace(/{{time}}/g, comment.date.fromNow());
-        cb(request);
-      });
-    };
-    
-    var comment = COMMENT_TXT.replace(/{{username}}/g, unsafeWindow.UserName);
+        shows = null;
+        delete shows;
+
+        // order missing shows by name
+        missingShows.sort(function (a, b) {
+            var nameA = a.name.toLowerCase();
+            var nameB = b.name.toLowerCase();
+
+            if (nameA > nameB)
+                return 1;
+            else if (nameA < nameB)
+                return -1;
+            return 0;
+        });
+
+        // order available shows by commentdate
+        Object.keys(comments_shows).sort().map(function (key) {
+            availableShows = availableShows.concat(comments_shows[key]);
+        });
+        availableShows = $.unique(availableShows);
+        comments_shows = null;
+        delete comments_shows;
+
+        var getRequests = function (show, cb) {
+            var comments = tvDbId_comments[parseInt(show.tvDbId)];
+            comments.sort(function (a, b) {
+                var dateA = a.date.format('x');
+                var dateB = b.date.format('x');
+
+                if (dateA > dateB)
+                    return 1;
+                else if (dateA < dateB)
+                    return -1;
+                return 0;
+            });
+            comments.map(function (comment) {
+                var request = USER_REQUEST_TXT.replace(/{{username}}/g, comment.user.name);
+                request = request.replace(/{{permalink}}/g, comment.permaLink);
+                request = request.replace(/{{time}}/g, comment.date.fromNow());
+                cb(request);
+            });
+        };
+
+        var comment = COMMENT_TXT.replace(/{{username}}/g, unsafeWindow.UserName);
         comment = $(comment);
-    if (missingShows.length > 0) {
-      var body = MISSING_SHOWS_TXT.replace(/{{nr_missing_shows}}/g, missingShows.length);
-          body = $(body);
-      var table = $(body[1]);
-      
-      missingShows.map(function(show) {
-        var row = MISSING_SHOWS_ROW_TXT.replace(/{{showname}}/g, show.name);
-            row = row.replace(/{{tvDbId}}/g, show.tvDbId);
-            row = row.replace(/{{url}}/g, 'http://thetvdb.com/?tab=series&id='+show.tvDbId+'&lid=13');
-            
-        row = $(row);
-        getRequests(show, function(request) {
-          $('td', row).last().append(request);
-        });
-        table.append(row);
-      });
-      $('.container-fluid', comment).append(body);
-    }
-    
-    if (availableShows.length > 0) {
-      var body = AVAILABLE_SHOWS_TXT.replace(/{{nr_available_shows}}/g, availableShows.length);
-          body = $(body);
-      var table = $('table', body);
-      
-      availableShows.map(function(show) {   
-        var row = AVAILABLE_SHOWS_ROW_TXT.replace(/{{showname}}/g, show.name);
-            row = row.replace(/{{url}}/g, show.link);
-            row = row.replace(/{{url_slug}}/g, show.link.replace(unsafeWindow.BaseURL, ''));
-        row = $(row);
-        getRequests(show, function(request) {
-          $('td', row).last().append(request);
-        });
-        table.append(row);
-      });
-      $('.container-fluid', comment).append(body);
-    }
-    
-    if (availableShows.length == 0 && missingShows.length == 0) {
-      var body = NO_REQUESTS_TXT;
-      $('.container-fluid', comment).append(body);
-    }
-    
-    $('.content.go-wide table.forumline tr[id^="replyside"]').last().after(comment);
-    
-    var consoleMsg = 'There are '+missingShows.length+' shows missing';
-    if (missingShows.length <= 0) {
-      console.info(consoleMsg);
-    }else{
-      console.warn(consoleMsg);
-      console.table(missingShows);
-    }
-  });
-  
-  log('Starting');
-  
-  var forumContentTable = $('#page .maincontent .content .forumline');
-  getCommentsOnPage(forumContentTable, function(comments) {
-    getTvDbIdsFromComments(comments, function(tvDbIds) {
-      tvDbId_comments = $.extend({},tvDbIds); // make a copy of the 
-      var todo = Object.keys(tvDbIds).length;
-      var shows = [];
-      
-      $.each(tvDbIds, function(tvDbId, comments) {
-        checkIfExists(tvDbId, function(show) {
-          todo--;
-          if(!show) { // invalid tvDbId
-            if (todo == 0)
-              $(document).trigger('bierdopje.missingShowsFinder.finished', [shows]);
-            return true;
-          }
-          
-          show.tvDbId = tvDbId;
-          shows.push(show);
-          
-          // set background color on comments, displaying the status.
-          // green means it's on BD, red means it's not.
-          var color = show.isAvailable ? 'green' : 'red';
-          comments.map(function(comment) {
-            var element = $('td.posttext', comment.bodyel);
-            // In case of multiple tvdbId's in a comment
-            // when a comment is set to red, don't make it green
-            if (element.hasClass('red'))
-              return true;
+        if (missingShows.length > 0) {
+            var body = MISSING_SHOWS_TXT.replace(/{{nr_missing_shows}}/g, missingShows.length);
+            body = $(body);
+            var table = $(body[1]);
 
-            if (color == 'red')
-              element.removeClass('green');
-            
-            element.addClass('twbs '+color);
-          });
-          
-          if (todo == 0)
-            $(document).trigger('bierdopje.missingShowsFinder.finished', [shows]);
-        });
-      });
+            missingShows.map(function (show) {
+                var row = MISSING_SHOWS_ROW_TXT.replace(/{{showname}}/g, show.name);
+                row = row.replace(/{{tvDbId}}/g, show.tvDbId);
+                row = row.replace(/{{url}}/g, 'http://thetvdb.com/?tab=series&id=' + show.tvDbId + '&lid=13');
+
+                row = $(row);
+                getRequests(show, function (request) {
+                    $('td', row).last().append(request);
+                });
+                table.append(row);
+            });
+            $('.container-fluid', comment).append(body);
+        }
+
+        if (availableShows.length > 0) {
+            var body = AVAILABLE_SHOWS_TXT.replace(/{{nr_available_shows}}/g, availableShows.length);
+            body = $(body);
+            var table = $('table', body);
+
+            availableShows.map(function (show) {
+                var row = AVAILABLE_SHOWS_ROW_TXT.replace(/{{showname}}/g, show.name);
+                row = row.replace(/{{url}}/g, show.link);
+                row = row.replace(/{{url_slug}}/g, show.link.replace(unsafeWindow.BaseURL, ''));
+                row = $(row);
+                getRequests(show, function (request) {
+                    $('td', row).last().append(request);
+                });
+                table.append(row);
+            });
+            $('.container-fluid', comment).append(body);
+        }
+
+        if (availableShows.length == 0 && missingShows.length == 0) {
+            var body = NO_REQUESTS_TXT;
+            $('.container-fluid', comment).append(body);
+        }
+
+        $('.content.go-wide table.forumline tr[id^="replyside"]').last().after(comment);
+
+        var consoleMsg = 'There are ' + missingShows.length + ' shows missing';
+        if (missingShows.length <= 0) {
+            console.info(consoleMsg);
+        } else {
+            console.warn(consoleMsg);
+            console.table(missingShows);
+        }
     });
-  });
-  
+
+    log('Starting');
+
+    var forumContentTable = $('#page .maincontent .content .forumline');
+    getCommentsOnPage(forumContentTable, function (comments) {
+        getTvDbIdsFromComments(comments, function (tvDbIds) {
+            tvDbId_comments = $.extend({}, tvDbIds); // make a copy of the
+            var todo = Object.keys(tvDbIds).length;
+            var shows = [];
+
+            $.each(tvDbIds, function (tvDbId, comments) {
+                checkIfExists(tvDbId, function (show) {
+                    todo--;
+                    if (!show) { // invalid tvDbId
+                        if (todo == 0)
+                            $(document).trigger('bierdopje.missingShowsFinder.finished', [shows]);
+                        return true;
+                    }
+
+                    show.tvDbId = tvDbId;
+                    shows.push(show);
+
+                    // set background color on comments, displaying the status.
+                    // green means it's on BD, red means it's not.
+                    var color = show.isAvailable ? 'green' : 'red';
+                    comments.map(function (comment) {
+                        var element = $('td.posttext', comment.bodyel);
+                        // In case of multiple tvdbId's in a comment
+                        // when a comment is set to red, don't make it green
+                        if (element.hasClass('red'))
+                            return true;
+
+                        if (color == 'red')
+                            element.removeClass('green');
+
+                        element.addClass('twbs ' + color);
+                    });
+
+                    if (todo == 0)
+                        $(document).trigger('bierdopje.missingShowsFinder.finished', [shows]);
+                });
+            });
+        });
+    });
+
 });
 
-  function getCommentsOnPage(forum, callback) {
+function getCommentsOnPage(forum, callback) {
     var comments = {};
-    
-    $('tr[id^="reply"]', forum).each(function(){      
-      var element = $(this);
-      var elementType = element.attr('name');
-      var commentId = parseInt(element.attr('id').split('-')[1]);
-      
-      var comment = {};
-      if(comments.hasOwnProperty(commentId))
-        comment = comments[commentId];
-      
-      if (elementType == 'replyheader') {
-        var header = parseCommentHeader(element);
-        if(foundComment(header))
-          comment = mergeCommentContent(comment, header);
-      } else if (elementType == 'replyside') {
-        var body = parseCommentBody(element);
-        if(foundComment(body))
-          comment = mergeCommentContent(comment, body);
-      }
-      
-      comments[commentId] = comment;
+
+    $('tr[id^="reply"]', forum).each(function () {
+        var element = $(this);
+        var elementType = element.attr('name');
+        var commentId = parseInt(element.attr('id').split('-')[1]);
+
+        var comment = {};
+        if (comments.hasOwnProperty(commentId))
+            comment = comments[commentId];
+
+        if (elementType == 'replyheader') {
+            var header = parseCommentHeader(element);
+            if (foundComment(header))
+                comment = mergeCommentContent(comment, header);
+        } else if (elementType == 'replyside') {
+            var body = parseCommentBody(element);
+            if (foundComment(body))
+                comment = mergeCommentContent(comment, body);
+        }
+
+        comments[commentId] = comment;
     });
-   
+
     // validate comments in a crappy way
     var validComments = [];
-    Object.keys(comments).map(function(id) {
-      var comment = comments[id];
-      var isValid = comment.hasOwnProperty('id')
-          && comment.hasOwnProperty('permaLink')
-          && comment.hasOwnProperty('user')
-          && comment.user.hasOwnProperty('name')
-          && comment.user.hasOwnProperty('link')
-          && comment.hasOwnProperty('date')
-          && comment.hasOwnProperty('headerel')
-          && comment.hasOwnProperty('body')
-          && comment.hasOwnProperty('bodyel');
-          
-      if(isValid)
-        validComments.push(comment);
+    Object.keys(comments).map(function (id) {
+        var comment = comments[id];
+        var isValid = comment.hasOwnProperty('id')
+            && comment.hasOwnProperty('permaLink')
+            && comment.hasOwnProperty('user')
+            && comment.user.hasOwnProperty('name')
+            && comment.user.hasOwnProperty('link')
+            && comment.hasOwnProperty('date')
+            && comment.hasOwnProperty('headerel')
+            && comment.hasOwnProperty('body')
+            && comment.hasOwnProperty('bodyel');
+
+        if (isValid)
+            validComments.push(comment);
     });
     comments = validComments;
-    
-    log('Found '+comments.length+' comments');
-    
+
+    log('Found ' + comments.length + ' comments');
+
     callback(comments);
-  }
-  
-  function foundComment(commentContent) {
+}
+
+function foundComment(commentContent) {
     return commentContent.hasOwnProperty('id');
-  }
-  
-  function mergeCommentContent(oldContent, newContent) {
-      // Merge oldContent and newContent
-      return jQuery.extend({}, oldContent, newContent, true);
-    }
-  
-  function parseCommentHeader(element) {
+}
+
+function mergeCommentContent(oldContent, newContent) {
+    // Merge oldContent and newContent
+    return jQuery.extend({}, oldContent, newContent, true);
+}
+
+function parseCommentHeader(element) {
     var commentId = parseInt(element.attr('id').split('-')[1]);
     var permaLink = windowLocation + '#' + commentId;
-    
+
     var userHref = $('.postname a.user', element);
     var user = {};
-      user.name = userHref.text();
-      user.link = 'http://www.bierdopje.com' + userHref.attr('href');
-     
+    user.name = userHref.text();
+    user.link = 'http://www.bierdopje.com' + userHref.attr('href');
+
     var dateString = $('td:eq(1) p', element).text(); //Geplaatst op woensdag 26 augustus 2015 20:01
-        dateString = /(\d+ .*?)$/g.exec(dateString)[1]; // 26 augustus 2015 20:01
+    dateString = /(\d+ .*?)$/g.exec(dateString)[1]; // 26 augustus 2015 20:01
     var date = moment(dateString, 'DD MMMM YYYY HH:mm');
-    
+
     return {
-      id: commentId,
-      permaLink : permaLink,
-      user : user,
-      date : date,
-      headerel : element
+        id: commentId,
+        permaLink: permaLink,
+        user: user,
+        date: date,
+        headerel: element
     };
-  }
-  
-  function parseCommentBody(element) {
+}
+
+function parseCommentBody(element) {
     var commentId = parseInt(element.attr('id').split('-')[1]);
     var body = $('span[id^=post].postbody', element);
-    
+
     return {
-      id : commentId,
-      body : body.html(),
-      bodyel : element
+        id: commentId,
+        body: body.html(),
+        bodyel: element
     };
-  }
-  
-  function getTvDbIdsFromComments(comments, callback) {
+}
+
+function getTvDbIdsFromComments(comments, callback) {
     var tvDbIds = {};
-    
+
     // Ignore Xandecs, he doesn't make requests
     var ignoredUsers = ['xandecs']; // lowercase
-    
+
     log('Extracting TvDbId\'s from comments');
-    comments.map(function(comment){
-      if(ignoredUsers.indexOf(comment.user.name.toLowerCase()) >= 0)
-        return true; //continue
-      
-      var TVDBId = -1;
-      var body = comment.body;
-      
-      var regexOptions = {
-        fromUrl : /thetvdb.com\/.*?id=(\d+)/gi,
-        raw     : /tvdb.*?(\d+)/gi
-      }
-      
-      // Look for an url to thetvdb by default
-      var regex = regexOptions['fromUrl'];
-      if (!regex.test(body)) { // If no url is found, try a less subtle search
-        regex = regexOptions['raw'];
-      }
-      regex.lastIndex = 0; // reset internal pointer
-      
-      var match;
-      while ((match = regex.exec(body)) !== null) {
-        TVDBId = parseInt(match[1]);
-        
-        log('Found tvDbId: "'+TVDBId+'"');
 
-        if(!tvDbIds.hasOwnProperty(TVDBId))
-          tvDbIds[TVDBId] = [];
+    function executeRegex(regex, body, comment, processCb) {
+        var match;
+        while ((match = regex.exec(body)) !== null) {
+            processCb(match[1], function (TVDBId) {
+                if (!TVDBId) {
+                    return;
+                }
+                log('Found tvDbId: "' + TVDBId + '"');
 
-        tvDbIds[TVDBId].push(comment);
-      }
-    });
-    
-    log('Found '+Object.keys(tvDbIds).length+' tvDbId\'s');
-    callback(tvDbIds);
-  }
-  
-  function checkIfExists(tvDbId, callback) {
-    log('Checking if show with tvDbId '+tvDbId+' exist on Bierdopje');
-    checkIfAvailableOnBierdopje(tvDbId, function(show) {
-      var isAvailable = Object.keys(show).length > 0;
-      log('Show with tvDbId '+tvDbId+' does'+(isAvailable ? '' : ' not')+' exist on Bierdopje');
-      if(!isAvailable) {
-        log('Trying to get showName from TvDb');
-        getSerieInfoFromTvDb(tvDbId, function(show) {
-          // Check if TvDbId returned info.
-          if(Object.keys(show).length <= 0) {
-            log('TvDbId "'+tvDbId+'" is invalid');
-            callback(null);
-            return false;
-          }
-          
-          log('Got showName of tvdbId '+tvDbId+', "'+show.name+'"');
-          
-          show.isAvailable = isAvailable;
-          callback(show);
+                if (!tvDbIds.hasOwnProperty(TVDBId))
+                    tvDbIds[TVDBId] = [];
+
+                tvDbIds[TVDBId].push(comment);
+            });
+        }
+    }
+
+    var promises = [];
+
+    comments.map(function (comment) {
+        if (ignoredUsers.indexOf(comment.user.name.toLowerCase()) >= 0)
+            return true; //continue
+
+        var body = comment.body;
+
+        var regexOptions = {
+            fromUrl: /thetvdb.com\/.*?id=(\d+)/gi,
+            fromSlug: /thetvdb.com\/series\/([\w-_]+)/gi,
+            raw: /tvdb.*?(\d+)/gi
+        };
+
+        // First try to find id's based on slugs
+        var regex = regexOptions['fromSlug'];
+        if (regex.test(body)) {
+            regex.lastIndex = 0;
+            promises.push(new Promise(function (resolve, reject) {
+                executeRegex(regex, body, comment, function (slug, cb) {
+                    console.log('Getting tvdbId from slug: "' + slug + '"');
+                    getSerieInfoFromTvDbSlug(slug, function (show) {
+                        if (Object.keys(show).length <= 0) {
+                            console.log('Slug "' + slug + '" does not exist.');
+                            cb(false);
+                        }
+                        console.log('Slug "' + slug + '" is tvdb "' + show.id + '"');
+                        cb(parseInt(show.id));
+                        resolve();
+                    });
+                });
+            }));
+        }
+
+        // Look for an url to thetvdb by default
+        regex = regexOptions['fromUrl'];
+        if (!regex.test(body)) { // If no url is found, try a less subtle search
+            regex = regexOptions['raw'];
+        }
+        regex.lastIndex = 0; // reset internal pointer
+
+        executeRegex(regex, body, comment, function (id, cb) {
+            promises.push(new Promise(function (resolve, reject) {
+                cb(parseInt(id));
+                resolve();
+            }));
         });
-      } else {
-        show.isAvailable = isAvailable;
+    });
+
+    Promise.all(promises).then(function () {
+        log('Found ' + Object.keys(tvDbIds).length + ' tvDbId\'s');
+        callback(tvDbIds);
+    });
+}
+
+function checkIfExists(tvDbId, callback) {
+    log('Checking if show with tvDbId ' + tvDbId + ' exist on Bierdopje');
+    checkIfAvailableOnBierdopje(tvDbId, function (show) {
+        var isAvailable = Object.keys(show).length > 0;
+        log('Show with tvDbId ' + tvDbId + ' does' + (isAvailable ? '' : ' not') + ' exist on Bierdopje');
+        if (!isAvailable) {
+            log('Trying to get showName from TvDb');
+            getSerieInfoFromTvDb(tvDbId, function (show) {
+                // Check if TvDbId returned info.
+                if (Object.keys(show).length <= 0) {
+                    log('TvDbId "' + tvDbId + '" is invalid');
+                    callback(null);
+                    return false;
+                }
+
+                log('Got showName of tvdbId ' + tvDbId + ', "' + show.name + '"');
+
+                show.isAvailable = isAvailable;
+                callback(show);
+            });
+        } else {
+            show.isAvailable = isAvailable;
+            callback(show);
+        }
+    });
+}
+
+function checkIfAvailableOnBierdopje(TVDBId, callback) {
+    $.getJSON(BD_API_URL + '/GetShowByTVDBID/' + TVDBId, function (show) {
         callback(show);
-      }
+    }).fail(function () {
+        callback({});
     });
-  }
-  
-  function checkIfAvailableOnBierdopje(TVDBId, callback) {
-    $.getJSON(BD_API_URL+'/GetShowByTVDBID/'+TVDBId, function(show) {
-      callback(show);
-    }).fail(function(){
-      callback({});
+}
+
+function getSerieInfoFromTvDb(TVDBId, callback) {
+    $.getJSON(TVDB_API_URL + '/show/' + TVDBId, function (show) {
+        callback(show);
+    }).fail(function () {
+        callback({});
     });
-  }
-  
-  function getSerieInfoFromTvDb(TVDBId, callback) {
-    $.getJSON(TVDB_API_URL+'/show/'+TVDBId, function(show) {
-      callback(show);
-    }).fail(function(){
-      callback({});
+}
+
+function getSerieInfoFromTvDbSlug(slug, callback) {
+    $.getJSON(TVDB_API_URL + '/show/search/' + slug, function (show) {
+        callback(show);
+    }).fail(function () {
+        callback({});
     });
-  }
-  
-  function log(string) {
-    if(DEBUG)
-      console.log('[BD:MissingShowFinder] '+string);
-  }
+}
+
+function log(string) {
+    if (DEBUG)
+        console.log('[BD:MissingShowFinder] ' + string);
+}
